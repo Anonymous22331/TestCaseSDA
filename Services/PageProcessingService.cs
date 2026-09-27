@@ -79,6 +79,18 @@ public sealed class PageProcessingService(
             var emails = EmailRegex.Matches(html).Select(match => match.Value).ToList();
             cancellationToken.ThrowIfCancellationRequested();
 
+            if (rows.Length > 0)
+            {
+                await using var connection = new NpgsqlConnection(
+                    configuration.GetConnectionString("Postgres"));
+                await connection.OpenAsync(cancellationToken);
+                await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+                await connection.ExecuteAsync(new CommandDefinition(
+                    "INSERT INTO elements (attribute_value, html) VALUES (@AttributeValue, @Html)",
+                    rows, transaction, cancellationToken: cancellationToken));
+                await transaction.CommitAsync(cancellationToken);
+            }
+
             return new ProcessResponse
             {
                 Url = url,
