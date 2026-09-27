@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "TestCaseSDA PostgreSQL",
+      "Group": "Servers",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "testcase",
+      "Username": "postgres",
+      "SSLMode": "prefer",
+      "PassFile": "/var/lib/pgadmin/.pgpass"
+    }
+  }
+}

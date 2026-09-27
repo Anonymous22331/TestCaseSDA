@@ -1,0 +1,64 @@
+services:
+  api:
+    image: mcr.microsoft.com/dotnet/sdk:10.0
+    working_dir: /app
+    command: >-
+      sh -c "dotnet restore && dotnet build --no-restore &&
+      dotnet run --no-build --no-launch-profile"
+    environment:
+      ASPNETCORE_URLS: http://0.0.0.0:8090
+      ASPNETCORE_HTTP_PORTS: ""
+      ASPNETCORE_ENVIRONMENT: Production
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+    ports:
+      - "127.0.0.1:8090:8090"
+    volumes:
+      - .:/app
+      - api_bin:/app/bin
+      - api_obj:/app/obj
+      - nuget_cache:/root/.nuget/packages
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: testcase
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d testcase"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  pgadmin:
+    image: dpage/pgadmin4:9.18
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: postgres
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+      PGADMIN_DISABLE_POSTFIX: "1"
+      PGPASS_FILE: /pgpass
+    ports:
+      - "127.0.0.1:8080:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - ./pgadmin/pgpass:/pgpass:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  pgadmin_data:
+  api_bin:
+  api_obj:
+  nuget_cache:
